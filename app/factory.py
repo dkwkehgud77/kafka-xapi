@@ -34,7 +34,7 @@ def create_app():
         title="Kafa xAPI - New Version",
         description="카프카 xAPI 고도화 및 성능 최적화",
         version="0.0.1",
-        terms_of_service="https://search.hunet.co.kr",
+        terms_of_service="https://kafka.hunet.co.kr",
         docs_url=None,
         redoc_url=None)
 

@@ -8,6 +8,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 
+import app
 from app import index
 from app.config.config import conf
 # from app.middlewares.token_validator import access_control
@@ -15,11 +16,12 @@ from app.middlewares.token_validator import access_control
 from app.middlewares.trusted_hosts import TrustedHostMiddleware
 from app.routes import route_kafka, route_jwt, route_xapi
 
+import pandas as pd
+
 # from app.api import business, edubank, news, prime, professor
 # from app import index, auth
 
 API_KEY_HEADER = APIKeyHeader(name="Authorization", auto_error=False)
-
 
 
 def create_app():
@@ -48,6 +50,37 @@ def create_app():
         allow_headers=["*"],
     )
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=conf().TRUSTED_HOSTS, except_path=["/health"])
+
+    # xapi 사전 정의
+    app.state.df_b2b = pd.read_csv(
+        filepath_or_buffer='app/templates/data/xapi_b2b.csv',
+        sep=',',
+        header=0,
+        names=[
+            'verb.en-us',
+            'verb.ko-kr',
+            'object.id',
+            'object.definition.extensions.url'
+        ],
+        encoding='euc-kr'
+    )
+    app.state.df_b2b["object.definition.extensions.url"] = \
+        app.state.df_b2b["object.definition.extensions.url"].str.lower()
+
+    app.state.df_exception = pd.read_csv(
+        filepath_or_buffer='app/templates/data/xapi_exception.csv',
+        sep=',',
+        header=0,
+        names=[
+            'verb.en-us',
+            'verb.ko-kr',
+            'object.id',
+            'object.definition.extensions.url'
+        ],
+        encoding='euc-kr'
+    )
+    app.state.df_exception["object.definition.extensions.url"] = \
+        app.state.df_exception["object.definition.extensions.url"].str.lower()
 
     # 라우터 정의
     app.include_router(route_kafka.router, tags=["kafka"])

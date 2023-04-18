@@ -1,14 +1,17 @@
 import re
+import sys
 import time
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.config.consts import EXCEPT_PATH_LIST, EXCEPT_PATH_REGEX
-from app.config.logger import api_logger
+from app.config.logger import api_logger, Logger
 from app.middlewares.errors.exceptions import APIException
 
 from app.utils.date_utils import D
+
+logger = Logger().get_instance().logger
 
 
 async def access_control(request: Request, call_next):
@@ -33,6 +36,7 @@ async def access_control(request: Request, call_next):
         response = await call_next(request)
         await api_logger(request=request, response=response)
     except Exception as e:
+        logger.error(e)
         error = await exception_handler(e)
         error_dict = dict(status=error.status_code, msg=error.msg, detail=error.detail, code=error.code)
         response = JSONResponse(status_code=error.status_code, content=error_dict)
@@ -46,7 +50,6 @@ async def url_pattern_check(path, pattern):
     if result:
         return True
     return False
-
 
 
 async def exception_handler(error: Exception):

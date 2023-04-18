@@ -6,6 +6,7 @@ from app.middlewares.errors import exceptions as ex
 from app.models.model_kafka import KafkaModel, MessageOk
 from app.routes.route_jwt import api_key, token_decode
 
+
 router = APIRouter(prefix="/api")
 authRouter = APIRouter(prefix="/auth")
 

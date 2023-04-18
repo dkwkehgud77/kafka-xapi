@@ -50,7 +50,7 @@ class Actor(BaseModel):
 
 # Verb
 class VerbDisplay(BaseModel):
-    en_us: str = Field(title='행위 en-us', alias='en-us')
+    en_us: Optional[str] = Field(None, title='행위 en-us', alias='en-us')
     ko_kr: Optional[str] = Field(None, title='행위 ko-kr', alias='ko-kr')
 
     class Config:
@@ -73,8 +73,8 @@ class Verb(BaseModel):
 
 # Object
 class Description(BaseModel):
-    en_us: str = Field('None', title='대상 en-us', alias='en-us')
-    ko_kr: str = Field('None', title='대상 ko-kr', alias='ko-kr')
+    en_us: str = Field(None, title='대상 en-us', alias='en-us')
+    ko_kr: str = Field(None, title='대상 ko-kr', alias='ko-kr')
 
     class Config:
         extra = Extra.allow

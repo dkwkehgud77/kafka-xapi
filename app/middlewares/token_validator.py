@@ -40,12 +40,12 @@ async def access_control(request: Request, call_next):
     try:
         response = await call_next(request)
         await api_logger(request=request, response=response)
-    except Exception as e:
-        logger.error(f"Exception occurred: {e}\n{traceback.format_exc()}")
-        error = await exception_handler(e)
+    except (BaseException, Exception) as ex:
+        logger.error(f"Exception occurred: {ex}\n{traceback.format_exc()}")
+        error = await exception_handler(ex)
         error_dict = dict(status=error.status_code, msg=error.msg, detail=error.detail, code=error.code)
         response = JSONResponse(status_code=error.status_code, content=error_dict)
-        request.state.traceback = traceback.extract_tb(e.__traceback__)
+        request.state.traceback = traceback.extract_tb(ex.__traceback__)
         await api_logger(request=request, error=error)
     finally:
         return response

@@ -41,6 +41,7 @@ logConfig = {
     }
 }
 
+
 # logging.config.dictConfig(logConfig)
 
 
@@ -77,6 +78,7 @@ async def api_logger(request: Request, response=None, error=None):
             msg=str(error.ex),
         )
 
+
     # email = user.email.split("@") if user and user.email else None
     user_log = dict(
         client=request.state.ip,
@@ -84,6 +86,11 @@ async def api_logger(request: Request, response=None, error=None):
         # user=user.id if user and user.id else None,
         # email="**" + email[0][2:-1] + "*@" + email[1] if user and user.email else None,
     )
+
+    if status_code == 422:
+        # body = await request.body()
+        # data = json.loads(body.decode("utf-8"))
+        print("dead letter topic send")
 
     log_dict = dict(
         url=request.url.hostname + request.url.path,

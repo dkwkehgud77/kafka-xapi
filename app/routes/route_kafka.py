@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Security
+from kafka.errors import KafkaError, KafkaTimeoutError
 from starlette.responses import JSONResponse
 
 from app.config.producer import kafkaProducer
@@ -31,12 +32,10 @@ async def kafka(params: KafkaModel, token=Security(api_key)):
 async def kafka_send(params: KafkaModel):
     topic = params.topic
     field = params.field
-    try:
-        if isinstance(field, list):
-            for row in field:
-                kafkaProducer().send(topic=topic, value=row)
-        else:
-            kafkaProducer().send(topic=topic, value=field)
-            return MessageOk()
-    except (BaseException, Exception) as e:
-        return JSONResponse(status_code=500, content=dict(message=str(e)))
+    if isinstance(field, list):
+        for row in field:
+            kafkaProducer().send(topic=topic, value=row)
+    else:
+        kafkaProducer().send(topic=topic, value=field)
+        return MessageOk()
+

@@ -1,6 +1,7 @@
 import logging
 import sys
 
+import pandas as pd
 from fastapi import FastAPI
 from fastapi.openapi.docs import get_swagger_ui_html, get_swagger_ui_oauth2_redirect_html, get_redoc_html
 from fastapi.security import APIKeyHeader
@@ -8,25 +9,20 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 
-import app
 from app import index
 from app.config.config import conf
-# from app.middlewares.token_validator import access_control
 from app.middlewares.token_validator import access_control
 from app.middlewares.trusted_hosts import TrustedHostMiddleware
 from app.routes import route_kafka, route_jwt, route_xapi
-
-import pandas as pd
-
-# from app.api import business, edubank, news, prime, professor
-# from app import index, auth
 
 API_KEY_HEADER = APIKeyHeader(name="Authorization", auto_error=False)
 
 
 def create_app():
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-                        format="%(asctime)s %(levelname)s [%(filename)s:%(lineno)d] - %(message)s")
+    logging.basicConfig(
+        stream=sys.stdout,
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s [%(filename)s:%(lineno)d] - %(message)s")
 
     logger = logging.getLogger(__name__)
     logger.info("Kafka xAPI start!")
@@ -41,14 +37,16 @@ def create_app():
         redoc_url=None)
 
     # 미들웨어 정의
-    app.add_middleware(middleware_class=BaseHTTPMiddleware, dispatch=access_control)
+    app.add_middleware(middleware_class=BaseHTTPMiddleware,
+                       dispatch=access_control)  # 모든 요청이 처리 되기 전에 access_control 함수를 실행 -> URL 체크, 예외 처리 핸들러, JWT 토큰 검사 등
     app.add_middleware(
-        CORSMiddleware,
+        CORSMiddleware,  # 웹 애플리케이션에서 다른 도메인에서 리소스를 요청할 때 발생하는 보안 문제를 해결하기 위한 규약, 현재 설정은 대부분 허용 -> API의 접근성을 높임
         allow_origins=conf().ALLOW_SITE,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    # 신뢰 하는 Host 목록만 허용, 호스트 헤더 조작 및 공격을 방지 하기 위한 미들웨어 -> API의 안정성을 높임
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=conf().TRUSTED_HOSTS, except_path=["/health"])
 
     # xapi 사전 정의
@@ -91,10 +89,6 @@ def create_app():
     app.include_router(index.router, tags=["Index"])
     # app.include_router(auth.router, tags=["Auth"], dependencies=[Depends(API_KEY_HEADER)])
     # app.include_router(business.router, tags=["Api"], dependencies=[Depends(API_KEY_HEADER)])
-    # app.include_router(edubank.router, tags=["Api"], dependencies=[Depends(API_KEY_HEADER)])
-    # app.include_router(news.router, tags=["Api"], dependencies=[Depends(API_KEY_HEADER)])
-    # app.include_router(prime.router, tags=["Api"], dependencies=[Depends(API_KEY_HEADER)])
-    # app.include_router(professor.router, tags=["Api"], dependencies=[Depends(API_KEY_HEADER)])
 
     # static 마운트
     app.mount("/static", StaticFiles(directory="app/templates"), name="static")

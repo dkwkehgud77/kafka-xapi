@@ -71,8 +71,8 @@ async def token_decode(access_token):
     :return:
     """
     try:
-        access_token = access_token.replace("Bearer ", "")
-        payload = jwt.decode(access_token, key=JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        _access_token = access_token.replace("Bearer ", "")
+        payload = jwt.decode(_access_token, key=JWT_SECRET, algorithms=[JWT_ALGORITHM])
     except ExpiredSignatureError:
         raise ex.TokenExpiredEx()
     except DecodeError:

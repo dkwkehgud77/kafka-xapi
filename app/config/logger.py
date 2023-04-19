@@ -1,13 +1,10 @@
 import json
 import logging
 import logging.config
-from dataclasses import asdict
 from datetime import datetime, timedelta
 from time import time
 
 from fastapi.requests import Request
-from app.config.config import conf
-
 
 logConfig = {
     "version": 1,
@@ -59,28 +56,6 @@ class Logger(object):
         return cls.__instance
 
 
-class SingleTone(object):
-    """
-    하나의 싱글톤 인스턴스를 생성
-    이미 생성된 인스턴스가 있다면 재사용
-    """
-
-    def __new__(cls, *args, **kwargs):
-        """
-        *args와 **kwargs는 무슨의미일까?
-        여러 가변인자를 받겠다고 명시하는 것이며, *args는 튜플형태로 전달, **kwargs는 키:값 쌍의 사전형으로 전달된다.
-        def test(*args, **kwargs):
-            print(args)
-            print(kwargs)
-
-        test(5,10,'hi', k='v')
-        결과 : (5, 10, 'hi') {'k': 'v'}
-        """
-        if not hasattr(cls, 'instance'):
-            cls.instance = super(Logger, cls, *args, **kwargs).__new__(cls, *args, **kwargs)
-        return cls.instance
-
-
 async def api_logger(request: Request, response=None, error=None):
     logger = Logger().get_instance().logger
     time_format = "%Y/%m/%d %H:%M:%S"
@@ -89,11 +64,9 @@ async def api_logger(request: Request, response=None, error=None):
     error_log = None
     payload = request.state.payload
     if error:
-        if request.state.inspect:
-            frame = request.state.inspect
-            error_file = frame.f_code.co_filename
-            error_func = frame.f_code.co_name
-            error_line = frame.f_lineno
+        if request.state.traceback:
+            exc_traceback = request.state.traceback
+            error_file, error_line, error_func, _ = exc_traceback[-1]
         else:
             error_func = error_file = error_line = "UNKNOWN"
 

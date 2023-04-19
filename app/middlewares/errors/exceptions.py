@@ -22,7 +22,7 @@ class APIException(Exception):
         *,
         status_code: int = StatusCode.HTTP_500,
         code: str = "000000",
-        msg: str = None,
+        msg: str = "서버 내부 오류가 발생했습니다.",
         detail: str = None,
         ex: Exception = None,
     ):

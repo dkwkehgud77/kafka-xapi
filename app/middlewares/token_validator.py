@@ -1,10 +1,14 @@
+import copy
+import json
 import re
 import sys
 import time
 import traceback
+from json import JSONDecodeError
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+from starlette.types import Message
 
 from app.config.consts import EXCEPT_PATH_LIST, EXCEPT_PATH_REGEX
 from app.config.logger import api_logger, Logger
@@ -15,13 +19,27 @@ from app.utils.date_utils import D
 logger = Logger().get_instance().logger
 
 
+async def set_body(request: Request, body: bytes):
+    async def receive() -> Message:
+        return {"type": "http.request", "body": body}
+
+    request._receive = receive
+
+
+async def get_body(request: Request) -> bytes:
+    body = await request.body()
+    await set_body(request, body)
+    return body
+
+
 async def access_control(request: Request, call_next):
     request.state.req_time = D.datetime()
     request.state.start = time.time()
     request.state.inspect = None
-    # request.state.user = None
-    request.state.payload = None
+    request.state.user = None
     request.state.service = None
+    await set_body(request, await request.body())
+    request.state.payload = await get_body(request)
 
     # 클라이언트의 IP 주소를 설정
     ip = request.headers["x-forwarded-for"] if "x-forwarded-for" in request.headers.keys() else request.client.host

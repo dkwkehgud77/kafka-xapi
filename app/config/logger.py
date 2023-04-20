@@ -2,9 +2,13 @@ import json
 import logging
 import logging.config
 from datetime import datetime, timedelta
+from json import JSONDecodeError
 from time import time
 
 from fastapi.requests import Request
+
+from app.config.producer import kafkaProducer
+from app.middlewares.errors import exceptions as ex
 
 logConfig = {
     "version": 1,
@@ -63,7 +67,10 @@ async def api_logger(request: Request, response=None, error=None):
     t = time() - request.state.start
     status_code = error.status_code if error else response.status_code
     error_log = None
+    user = request.state.user
     payload = request.state.payload
+    payload = payload.decode('utf-8')
+
     if error:
         if request.state.traceback:
             exc_traceback = request.state.traceback
@@ -77,20 +84,22 @@ async def api_logger(request: Request, response=None, error=None):
             raised=str(error.__class__.__name__),
             msg=str(error.ex),
         )
+        kafkaProducer().send(topic="dead-letter-xapi", value=payload)
 
-
-    # email = user.email.split("@") if user and user.email else None
+    email = user.email.split("@") if user and user.email else None
     user_log = dict(
         client=request.state.ip,
-        user=payload
-        # user=user.id if user and user.id else None,
-        # email="**" + email[0][2:-1] + "*@" + email[1] if user and user.email else None,
+        user=user.id if user and user.id else None,
+        email="**" + email[0][2:-1] + "*@" + email[1] if user and user.email else None,
     )
 
     if status_code == 422:
-        # body = await request.body()
-        # data = json.loads(body.decode("utf-8"))
-        print("dead letter topic send")
+        try:
+            payload = json.loads(payload)
+            kafkaProducer().send(topic="dead-letter-xapi", value=payload)
+        except JSONDecodeError:
+            logger.warning("Invalid JSON request")
+            pass
 
     log_dict = dict(
         url=request.url.hostname + request.url.path,
@@ -102,7 +111,10 @@ async def api_logger(request: Request, response=None, error=None):
         datetimeUTC=datetime.utcnow().strftime(time_format),
         datetimeKST=(datetime.utcnow() + timedelta(hours=9)).strftime(time_format),
     )
+
     if error and error.status_code >= 500:
         logger.error(json.dumps(log_dict))
     else:
         logger.info(json.dumps(log_dict))
+
+

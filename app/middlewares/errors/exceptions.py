@@ -18,13 +18,13 @@ class APIException(Exception):
     ex: Exception
 
     def __init__(
-        self,
-        *,
-        status_code: int = StatusCode.HTTP_500,
-        code: str = "000000",
-        msg: str = "서버 내부 오류가 발생했습니다.",
-        detail: str = None,
-        ex: Exception = None,
+            self,
+            *,
+            status_code: int = StatusCode.HTTP_500,
+            code: str = "000000",
+            msg: str = "서버 내부 오류가 발생했습니다.",
+            detail: str = None,
+            ex: Exception = None,
     ):
         self.status_code = status_code
         self.code = code
@@ -32,6 +32,17 @@ class APIException(Exception):
         self.detail = detail
         self.ex = ex
         super().__init__(ex)
+
+
+class InvalidJsonRequest(APIException):
+    def __init__(self, user_id: int = None, ex: Exception = None):
+        super().__init__(
+            status_code=StatusCode.HTTP_400,
+            msg=f"올바른 Json 요청이 아닙니다.",
+            detail=f"Invalid JSON request",
+            code=f"{StatusCode.HTTP_400}{'1'.zfill(4)}",
+            ex=ex,
+        )
 
 
 class NotFoundUserEx(APIException):
@@ -167,7 +178,7 @@ class APITimestampEx(APIException):
 
 
 class NotFoundAccessKeyEx(APIException):
-    def __init__(self, api_key: str,  ex: Exception = None):
+    def __init__(self, api_key: str, ex: Exception = None):
         super().__init__(
             status_code=StatusCode.HTTP_404,
             msg=f"API 키를 찾을 수 없습니다.",

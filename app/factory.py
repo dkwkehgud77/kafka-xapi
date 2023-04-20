@@ -2,11 +2,12 @@ import logging
 import sys
 
 import pandas as pd
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.openapi.docs import get_swagger_ui_html, get_swagger_ui_oauth2_redirect_html, get_redoc_html
 from fastapi.security import APIKeyHeader
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
+from starlette.requests import Request
 from starlette.staticfiles import StaticFiles
 
 from app import index
@@ -16,6 +17,14 @@ from app.middlewares.trusted_hosts import TrustedHostMiddleware
 from app.routes import route_kafka, route_jwt, route_xapi
 
 API_KEY_HEADER = APIKeyHeader(name="Authorization", auto_error=False)
+
+
+async def request_body(request: Request):
+    print(await request.json())
+    # method = str(request.method)
+    # if method == 'POST' or method == 'PUT' or method == 'PATCH':
+    #     # Request Body 를 context에 저장
+    #     context.update(request_body=await request.json())
 
 
 def create_app():
@@ -37,6 +46,7 @@ def create_app():
         redoc_url=None)
 
     # 미들웨어 정의
+    # app.add_middleware(BasicContextMiddleware)
     app.add_middleware(middleware_class=BaseHTTPMiddleware,
                        dispatch=access_control)  # 모든 요청이 처리 되기 전에 access_control 함수를 실행 -> URL 체크, 예외 처리 핸들러, JWT 토큰 검사 등
     app.add_middleware(
@@ -81,7 +91,7 @@ def create_app():
         app.state.df_exception["object.definition.extensions.url"].str.lower()
 
     # 라우터 정의
-    app.include_router(route_kafka.router, tags=["kafka"])
+    app.include_router(route_kafka.router, tags=["kafka"], dependencies=[Depends(request_body)])
     app.include_router(route_xapi.router, tags=["kafka"])
     app.include_router(route_kafka.authRouter, tags=["auth"])
     app.include_router(route_xapi.authRouter, tags=["auth"])
